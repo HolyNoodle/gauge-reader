@@ -101,27 +101,19 @@ def find_needle(image: cv2.typing.MatLike, ellipse: cv2.typing.MatLike, threshol
 def calculate_gauge_value(ellipse: cv2.typing.MatLike, needle: cv2.typing.Point, start_gauge_angle: int, end_gauge_angle: int, start_range: int, end_range: int):
     center = ellipse[0]
 
-    radius_x = ellipse[1][0] / 2
-    radius_y = ellipse[1][1] / 2
-
-    start_angle_rad = np.radians(start_gauge_angle)
-    end_angle_rad = np.radians(end_gauge_angle)
-
-    ellipsis_perimeter_length = 2 * np.pi * np.sqrt((radius_x ** 2 + radius_y ** 2) / 2)
+    start_angle_rad = np.deg2rad(start_gauge_angle)
+    end_angle_rad = np.deg2rad(end_gauge_angle)
 
     needle_angle = np.arctan2(needle[1] - center[1], needle[0] - center[0])
 
-    if needle_angle < 0:
-      needle_angle += 2 * np.pi
-
     print("start", start_angle_rad, "end", end_angle_rad, "needle", needle_angle)
 
-    distance = abs(needle_angle - start_angle_rad) #np.sqrt((needle[0] - start_point[0])**2 + (needle[1] - start_point[1])**2)
-    distance_ignored = abs(end_angle_rad - start_angle_rad) #np.sqrt((start_point[0] - end_point[0])**2 + (start_point[1] - end_point[1])**2)
+    distance = needle_angle - start_angle_rad
+    distance_ignored = start_angle_rad + 2 * np.pi - end_angle_rad
 
-    gauge_actual_size = 2 * np.pi - distance_ignored #ellipsis_perimeter_length - distance_ignored
+    gauge_actual_size = end_angle_rad - start_angle_rad
     ratio = distance / gauge_actual_size
 
-    print("distance", distance, "ignored", distance_ignored, "perimeter", ellipsis_perimeter_length, "ratio", ratio, "gauge size", gauge_actual_size)
+    print("distance", distance, "ignored", distance_ignored, "ratio", ratio, "gauge size", gauge_actual_size)
 
     return ratio * (end_range - start_range) + start_range
