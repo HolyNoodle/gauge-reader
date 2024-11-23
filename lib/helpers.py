@@ -98,19 +98,22 @@ def find_needle(image: cv2.typing.MatLike, ellipse: cv2.typing.MatLike, threshol
 
   return (furthest_point, filtered_lines, lines, dst2)
 
-def calculate_gauge_value(ellipse: cv2.typing.MatLike, needle_angle: float, start_gauge_angle: int, end_gauge_angle: int, start_range: int, end_range: int):
+def calculate_gauge_value(ellipse: cv2.typing.MatLike,  needle: float, start_gauge_angle: int, end_gauge_angle: int, start_range: int, end_range: int):
     start_angle_rad = np.deg2rad(start_gauge_angle)
     end_angle_rad = np.deg2rad(end_gauge_angle)
+
+    center = ellipse[0]
+    needle_angle_rad = np.arctan2(needle[1] - center[1], needle[0] - center[0])
+    needle_angle = np.degrees(needle_angle_rad)
     needle_angle_rad = np.deg2rad(needle_angle)
 
-    print("start", start_angle_rad, "end", end_angle_rad, "needle", needle_angle_rad)
+    if needle_angle_rad < 0:
+      needle_angle_rad += 2 * np.pi
 
     distance = needle_angle_rad - start_angle_rad
     distance_ignored = start_angle_rad + 2 * np.pi - end_angle_rad
 
     gauge_actual_size = end_angle_rad - start_angle_rad
     ratio = distance / gauge_actual_size
-
-    print("distance", distance, "ignored", distance_ignored, "ratio", ratio, "gauge size", gauge_actual_size)
 
     return ratio * (end_range - start_range) + start_range
