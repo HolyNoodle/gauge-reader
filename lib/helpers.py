@@ -43,8 +43,9 @@ def find_needle(image: cv2.typing.MatLike, ellipse: cv2.typing.MatLike, threshol
 
   _, dst2 = cv2.threshold(gray2, threshold_value, threshold_brightness, mode)
 
-  lines = cv2.HoughLinesP(image=dst2, rho=3, theta=np.pi / 180, threshold=100,minLineLength=minLineLength, maxLineGap=maxLineGap)
+  lines = cv2.HoughLinesP(image=dst2, rho=3, theta=np.pi / 180, threshold=100, minLineLength=minLineLength, maxLineGap=maxLineGap)
 
+  center = ellipse[0]
   radiusX = ellipse[1][0] / 2
   radiusY = ellipse[1][1] / 2
   filtered_lines = []
@@ -52,26 +53,31 @@ def find_needle(image: cv2.typing.MatLike, ellipse: cv2.typing.MatLike, threshol
 
   if lines is None:
     return (None, [], [], dst2)
+  
+
+  line_lengths = []
+
 
   # Filter lines that are close to the center
   for line in lines:
     x1, y1, x2, y2 = line[0]
-    distance1 = np.sqrt((x1 - radiusX)**2 + (y1 - radiusY)**2)
-    distance2 = np.sqrt((x2 - radiusX)**2 + (y2 - radiusY)**2)
+    distance1 = np.sqrt((x1 - center[0])**2 + (y1 - center[1])**2)
+    distance2 = np.sqrt((x2 - center[0])**2 + (y2 - center[1])**2)
 
     min_dist = min(distance1, distance2)
+    max_dist = max(distance1, distance2)
     dists.append(min_dist)
 
-    center_radius = max(ellipse[1])
-    if min_dist < center_radius * 0.15:
-      filtered_lines.append(line)
+    line_contour = np.array([[x1, y1], [x2, y2]])
+    is_center_on_line = cv2.pointPolygonTest(line_contour, center, False) >= 0
 
-  # if len(filtered_lines) == 0:
-  #   return (None, [], lines)
-  
-  # Compute the length of each filtered line
-  line_lengths = [np.linalg.norm([line[0][2] - line[0][0], line[0][3] - line[0][1]]) for line in filtered_lines]
-  line_lengths = [line_lengths[x] * 1/(dists[x]) for x in range(len(line_lengths))]
+    length = np.linalg.norm([x2 - x1, y2 - y1])
+
+    # Check if the center of the ellipse is on the line
+    center_radius = max(radiusX, radiusY)
+    if (is_center_on_line or min_dist < center_radius * 0.40) and (max_dist < center_radius * 1.1 and max_dist > center_radius * 0.6):
+      line_lengths.append(length)
+      filtered_lines.append(line)
 
   if len(line_lengths) == 0:
     return (None, filtered_lines, lines, dst2)
@@ -81,8 +87,8 @@ def find_needle(image: cv2.typing.MatLike, ellipse: cv2.typing.MatLike, threshol
   x1, y1, x2, y2 = filtered_lines[longest_line_index][0]
 
   # Calculate distances from the center to the endpoints of the longest line
-  distance_to_x1_y1 = np.sqrt((x1 - radiusX)**2 + (y1 - radiusY)**2)
-  distance_to_x2_y2 = np.sqrt((x2 - radiusX)**2 + (y2 - radiusY)**2)
+  distance_to_x1_y1 = np.sqrt((x1 - center[0])**2 + (y1 - center[1])**2)
+  distance_to_x2_y2 = np.sqrt((x2 - center[0])**2 + (y2 - center[1])**2)
 
   # Determine the point that is further away from the center
   if distance_to_x1_y1 > distance_to_x2_y2:
@@ -110,10 +116,10 @@ def calculate_gauge_value(ellipse: cv2.typing.MatLike, needle: cv2.typing.Point,
 
     ellipsis_perimeter_length = 2 * np.pi * np.sqrt((radius_x ** 2 + radius_y ** 2) / 2)
 
-    needle_angle = np.arctan2(needle[1] - center[1], needle[0] - center[0])
+    needle_angle = abs(np.arctan2(needle[1] - center[1], needle[0] - center[0]))
 
     distance = abs(needle_angle - start_angle_rad) #np.sqrt((needle[0] - start_point[0])**2 + (needle[1] - start_point[1])**2)
-    distance_ignored = abs(start_angle_rad - end_angle_rad) #np.sqrt((start_point[0] - end_point[0])**2 + (start_point[1] - end_point[1])**2)
+    distance_ignored = abs(end_angle_rad - start_angle_rad) #np.sqrt((start_point[0] - end_point[0])**2 + (start_point[1] - end_point[1])**2)
 
     gauge_actual_size = 2 * np.pi - distance_ignored #ellipsis_perimeter_length - distance_ignored
     ratio = distance / gauge_actual_size
