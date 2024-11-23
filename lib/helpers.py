@@ -37,9 +37,11 @@ def crop_image_to_ellipsis(ellipse: cv2.typing.MatLike, source: cv2.typing.MatLi
 
   return (cropped_image, new_ellipse, (top_left_x, top_left_y, bottom_right_x, bottom_right_y))
 
-def find_needle(image: cv2.typing.MatLike, ellipse: cv2.typing.MatLike, threshold_value: int, threshold_brightness: int, minLineLength:int, maxLineGap: int):
+def find_needle(image: cv2.typing.MatLike, ellipse: cv2.typing.MatLike, threshold_value: int, threshold_brightness: int, minLineLength:int, maxLineGap: int, reverse: bool = False):
   gray2 = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-  _, dst2 = cv2.threshold(gray2, threshold_value, threshold_brightness, cv2.THRESH_BINARY_INV)
+  mode = cv2.THRESH_BINARY if reverse else cv2.THRESH_BINARY_INV
+
+  _, dst2 = cv2.threshold(gray2, threshold_value, threshold_brightness, mode)
 
   lines = cv2.HoughLinesP(image=dst2, rho=3, theta=np.pi / 180, threshold=100,minLineLength=minLineLength, maxLineGap=maxLineGap)
 
@@ -47,6 +49,9 @@ def find_needle(image: cv2.typing.MatLike, ellipse: cv2.typing.MatLike, threshol
   radiusY = ellipse[1][1] / 2
   filtered_lines = []
   dists = []
+
+  if lines is None:
+    return (None, [], [], dst2)
 
   # Filter lines that are close to the center
   for line in lines:
@@ -57,16 +62,19 @@ def find_needle(image: cv2.typing.MatLike, ellipse: cv2.typing.MatLike, threshol
     min_dist = min(distance1, distance2)
     dists.append(min_dist)
 
-    # center_radius = max(ellipse[1])
-    # if min_dist < center_radius * 0.1:
-    filtered_lines.append(line)
+    center_radius = max(ellipse[1])
+    if min_dist < center_radius * 0.15:
+      filtered_lines.append(line)
 
   # if len(filtered_lines) == 0:
   #   return (None, [], lines)
   
   # Compute the length of each filtered line
   line_lengths = [np.linalg.norm([line[0][2] - line[0][0], line[0][3] - line[0][1]]) for line in filtered_lines]
-  line_lengths = [line_lengths[x] * 0.1 * 1/(dists[x]) for x in range(len(line_lengths))]
+  line_lengths = [line_lengths[x] * 1/(dists[x]) for x in range(len(line_lengths))]
+
+  if len(line_lengths) == 0:
+    return (None, filtered_lines, lines, dst2)
 
   longest_line_index = max(range(len(filtered_lines)), key=lambda x: line_lengths[x])
 
@@ -82,7 +90,7 @@ def find_needle(image: cv2.typing.MatLike, ellipse: cv2.typing.MatLike, threshol
   else:
     furthest_point = (int(x2), int(y2))
 
-  return (furthest_point, filtered_lines, lines)
+  return (furthest_point, filtered_lines, lines, dst2)
 
 def calculate_gauge_value(ellipse: cv2.typing.MatLike, needle: cv2.typing.Point, start_gauge_angle: int, end_gauge_angle: int, start_range: int, end_range: int):
     center = ellipse[0]
@@ -90,18 +98,26 @@ def calculate_gauge_value(ellipse: cv2.typing.MatLike, needle: cv2.typing.Point,
     radius_x = ellipse[1][0] / 2
     radius_y = ellipse[1][1] / 2
 
-    start_angle_rad = np.deg2rad(start_gauge_angle)
-    end_angle_rad = np.deg2rad(end_gauge_angle)
+    start_angle_rad = np.radians(start_gauge_angle)
+    end_angle_rad = np.radians(end_gauge_angle)
 
     start_point = (int(center[0] + radius_x * np.cos(start_angle_rad) ),
           int(center[1] - radius_y * np.sin(start_angle_rad)))
     end_point = (int(center[0] + radius_x * np.cos(end_angle_rad)),
           int(center[1] - radius_y * np.sin(end_angle_rad)))
+    
+    print(start_point, end_point, needle)
 
     ellipsis_perimeter_length = 2 * np.pi * np.sqrt((radius_x ** 2 + radius_y ** 2) / 2)
 
-    distance = np.linalg.norm(np.array(needle) - np.array(start_point))
-    distance_ignored = np.linalg.norm(np.array(end_point) - np.array(start_point))
-    ratio = distance / (ellipsis_perimeter_length - distance_ignored)
+    needle_angle = np.arctan2(needle[1] - center[1], needle[0] - center[0])
+
+    distance = abs(needle_angle - start_angle_rad) #np.sqrt((needle[0] - start_point[0])**2 + (needle[1] - start_point[1])**2)
+    distance_ignored = abs(start_angle_rad - end_angle_rad) #np.sqrt((start_point[0] - end_point[0])**2 + (start_point[1] - end_point[1])**2)
+
+    gauge_actual_size = 2 * np.pi - distance_ignored #ellipsis_perimeter_length - distance_ignored
+    ratio = distance / gauge_actual_size
+
+    print(distance, distance_ignored, ellipsis_perimeter_length, ratio, gauge_actual_size)
 
     return ratio * (end_range - start_range) + start_range
