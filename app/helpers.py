@@ -199,18 +199,19 @@ class GaugeValueExtractor:
 
         # Draw the start and end angles
         center = self.ellipse[0]
-        radius = max(self.ellipse[1]) / 2
+        radius_x = self.ellipse[1][0] / 2
+        radius_y = self.ellipse[1][1] / 2
 
         start_angle_rad = np.deg2rad(self.start_gauge_angle)
         end_angle_rad = np.deg2rad(self.end_gauge_angle)
 
         start_point = (
-            int(center[0] + radius * np.cos(start_angle_rad)),
-            int(center[1] + radius * np.sin(start_angle_rad)),
+            int(center[0] + radius_x * np.cos(start_angle_rad)),
+            int(center[1] + radius_y * np.sin(start_angle_rad)),
         )
         end_point = (
-            int(center[0] + radius * np.cos(end_angle_rad)),
-            int(center[1] + radius * np.sin(end_angle_rad)),
+            int(center[0] + radius_x * np.cos(end_angle_rad)),
+            int(center[1] + radius_y * np.sin(end_angle_rad)),
         )
 
         cv2.line(cropped, center, start_point, (255, 0, 0), 2)

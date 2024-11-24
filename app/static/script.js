@@ -58,31 +58,32 @@ const getGaugeValue = (file, config) => {
   });
 };
 
+const get_last_images = () => {
+  return new Promise((resolve, reject) => {
+    fetch("http://localhost:8000/last_images")
+      .then((data) => {
+        data.json().then(resolve).catch(reject);
+      })
+      .catch(reject);
+  });
+};
+
 const getGaugeDebugInfo = (file, config) => {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onloadend = () => {
-      const base64String = reader.result
-        .replace("data:", "")
-        .replace(/^.+,/, "");
-      fetch("http://localhost:8000/debug_image", {
-        method: "POST",
-        body: JSON.stringify({
-          image: base64String,
-          config,
-        }),
-        headers: {
-          "Content-type": "application/json",
-        },
+    fetch("http://localhost:8000/debug_image", {
+      method: "POST",
+      body: JSON.stringify({
+        image: file,
+        config,
+      }),
+      headers: {
+        "Content-type": "application/json",
+      },
+    })
+      .then((data) => {
+        data.json().then(resolve).catch(reject);
       })
-        .then((data) => {
-          data.json().then(resolve).catch(reject);
-        })
-        .catch(reject);
-    };
-
-    reader.readAsDataURL(file);
+      .catch(reject);
   });
 };
 
@@ -101,7 +102,7 @@ const selectStartAngle = document.getElementById("select_start_angle");
 const selectEndAngle = document.getElementById("select_end_angle");
 
 executeButton.addEventListener("click", () => {
-  const file = fileInput.files[0];
+  const file = inputImage.src.replace("data:image/png;base64,", "");
   const config = JSON.parse(configInput.value);
 
   getGaugeDebugInfo(file, config).then((debugInfo) => {
@@ -226,4 +227,18 @@ selectEndAngle.addEventListener("click", () => {
   };
 
   inputImage.addEventListener("click", listener);
+});
+
+get_last_images().then((data) => {
+  data.images.forEach((image) => {
+    const img = document.createElement("img");
+    img.src = `data:image/png;base64,${image.content}`;
+    document.body.appendChild(img);
+
+    img.addEventListener("click", () => {
+      inputImage.src = img.src;
+
+      actions.style.display = "flex";
+    });
+  });
 });

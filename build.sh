@@ -1,1 +1,1 @@
-docker build . -t gauge-reader
+docker build . -t holynoodledev/gauge-reader
