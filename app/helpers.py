@@ -167,7 +167,7 @@ class GaugeValueExtractor:
         cropped = image[self.crop_top_left[1]:self.crop_bottom_right[1], self.crop_top_left[0]:self.crop_bottom_right[0]]
         cropped = cropped.copy()
 
-        needle, _, _, dst2 = find_needle(
+        needle, filtered, lines, dst2 = find_needle(
             cropped,
             self.ellipse,
             self.threshold_value,
@@ -176,6 +176,18 @@ class GaugeValueExtractor:
             self.maxLineGap,
             self.threshold_reverse,
         )
+
+        cv2.ellipse(dst2, self.ellipse, (0, 255, 0), 2)
+
+        # Draw all lines on dst2
+        for line in lines:
+            x1, y1, x2, y2 = line[0]
+            cv2.line(dst2, (x1, y1), (x2, y2), (255, 0, 0), 1)
+
+        # Draw filtered lines on dst2
+        for line in filtered:
+            x1, y1, x2, y2 = line[0]
+            cv2.line(dst2, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
         if needle is None:
             return None, dst2

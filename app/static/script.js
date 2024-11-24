@@ -27,6 +27,7 @@ const config = {
   threshold_brightness: 255,
   min_line_length: 40,
   max_line_gap: 1,
+  threshold_reverse: false,
 };
 
 const getGaugeValue = (file, config) => {
@@ -92,6 +93,12 @@ const thresholdImage = document.getElementById("threshold_image");
 const fileInput = document.getElementById("file_input");
 const inputImage = document.getElementById("input_image");
 const configInput = document.getElementById("config");
+const actions = document.getElementById("actions");
+const selectCropStart = document.getElementById("select_crop_start");
+const selectCropEnd = document.getElementById("select_crop_end");
+const selectCenter = document.getElementById("select_center");
+const selectStartAngle = document.getElementById("select_start_angle");
+const selectEndAngle = document.getElementById("select_end_angle");
 
 executeButton.addEventListener("click", () => {
   const file = fileInput.files[0];
@@ -110,9 +117,113 @@ fileInput.addEventListener("change", () => {
   const reader = new FileReader();
   reader.onloadend = () => {
     inputImage.src = reader.result;
+
+    actions.style.display = "flex";
   };
 
   reader.readAsDataURL(file);
 });
 
 configInput.value = JSON.stringify(config, null, 2);
+
+selectCropStart.addEventListener("click", () => {
+  const listener = (e) => {
+    const config = JSON.parse(configInput.value);
+    const rect = inputImage.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    config.crop.top_left.x = math.round(x);
+    config.crop.top_left.y = math.round(y);
+
+    configInput.value = JSON.stringify(config, null, 2);
+
+    inputImage.removeEventListener("click", listener);
+  };
+
+  inputImage.addEventListener("click", listener);
+});
+
+selectCropEnd.addEventListener("click", () => {
+  const listener = (e) => {
+    const config = JSON.parse(configInput.value);
+    const rect = inputImage.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    config.crop.bottom_right.x = Math.round(x);
+    config.crop.bottom_right.y = Math.round(y);
+
+    configInput.value = JSON.stringify(config, null, 2);
+
+    inputImage.removeEventListener("click", listener);
+  };
+
+  inputImage.addEventListener("click", listener);
+});
+
+selectCenter.addEventListener("click", () => {
+  const listener = (e) => {
+    const config = JSON.parse(configInput.value);
+    const rect = inputImage.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    config.center.x = Math.round(x) - config.crop.top_left.x;
+    config.center.y = Math.round(y) - config.crop.top_left.y;
+
+    configInput.value = JSON.stringify(config, null, 2);
+
+    inputImage.removeEventListener("click", listener);
+  };
+
+  inputImage.addEventListener("click", listener);
+});
+
+selectStartAngle.addEventListener("click", () => {
+  const listener = (e) => {
+    const config = JSON.parse(configInput.value);
+    const rect = inputImage.getBoundingClientRect();
+    const x = e.clientX - rect.left - config.crop.top_left.x;
+    const y = e.clientY - rect.top - config.crop.top_left.y;
+
+    config.start_angle =
+      Math.atan2(y - config.center.y, x - config.center.x) * (180 / Math.PI);
+
+    if (config.start_angle < 0) {
+      config.start_angle += 360;
+    }
+
+    configInput.value = JSON.stringify(config, null, 2);
+
+    inputImage.removeEventListener("click", listener);
+  };
+
+  inputImage.addEventListener("click", listener);
+});
+
+selectEndAngle.addEventListener("click", () => {
+  const listener = (e) => {
+    const config = JSON.parse(configInput.value);
+    const rect = inputImage.getBoundingClientRect();
+    const x = e.clientX - rect.left - config.crop.top_left.x;
+    const y = e.clientY - rect.top - config.crop.top_left.y;
+
+    config.end_angle =
+      Math.atan2(y - config.center.y, x - config.center.x) * (180 / Math.PI);
+
+    if (config.end_angle < 0) {
+      config.end_angle += 360;
+    }
+
+    if (config.end_angle < config.start_angle) {
+      config.end_angle += 360;
+    }
+
+    configInput.value = JSON.stringify(config, null, 2);
+
+    inputImage.removeEventListener("click", listener);
+  };
+
+  inputImage.addEventListener("click", listener);
+});

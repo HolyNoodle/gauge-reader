@@ -12,10 +12,17 @@
       <div style="display: flex; flex-direction: column">
         image: <input id="file_input" type="file" />
 
-        <textarea id="config" rows="100" cols="50"></textarea>
+        <textarea id="config" rows="100" cols="30"></textarea>
       </div>
       <div style="display: flex; flex-direction: column">
         <button id="execute">Test</button>
+        <div id="actions" style="display: none; flex-direction: row;">
+          <button id="select_crop_start">Select crop start</button>
+          <button id="select_crop_end">Select crop end</button>
+          <button id="select_center">Select center</button>
+          <button id="select_start_angle">Select start angle</button>
+          <button id="select_end_angle">Select end angle</button>
+        </div>
         <img id="input_image" style="height: fit-content; width: fit-content" />
       </div>
 

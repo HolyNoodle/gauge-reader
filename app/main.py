@@ -15,7 +15,6 @@ app = FastAPI()
 
 app.mount("/app", StaticFiles(directory="static", html=True), name="static")
 
-
 class Point(BaseModel):
     x: int
     y: int
@@ -101,7 +100,7 @@ async def get_debug_image(params: InputImage):
     cv2_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
     debug_image, dst2 = extractor.draw_debug_image(cv2_image)
-    base_64_image = base64.b64encode(cv2.imencode(".jpg", debug_image)[1]).decode()
+    base_64_image = base64.b64encode(cv2.imencode(".jpg", debug_image)[1]).decode() if debug_image is not None else None
     base_64_dst2 = base64.b64encode(cv2.imencode(".jpg", dst2)[1]).decode()
 
     return {
