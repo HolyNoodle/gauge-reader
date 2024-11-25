@@ -38,7 +38,7 @@ const getGaugeValue = (file, config) => {
       const base64String = reader.result
         .replace("data:", "")
         .replace(/^.+,/, "");
-      fetch("http://localhost:8000/gauge_value", {
+      fetch("/gauge_value", {
         method: "POST",
         body: JSON.stringify({
           image: base64String,
@@ -60,7 +60,7 @@ const getGaugeValue = (file, config) => {
 
 const get_last_images = () => {
   return new Promise((resolve, reject) => {
-    fetch("http://localhost:8000/last_images")
+    fetch("/last_images")
       .then((data) => {
         data.json().then(resolve).catch(reject);
       })
@@ -70,7 +70,7 @@ const get_last_images = () => {
 
 const getGaugeDebugInfo = (file, config) => {
   return new Promise((resolve, reject) => {
-    fetch("http://localhost:8000/debug_image", {
+    fetch("/debug_image", {
       method: "POST",
       body: JSON.stringify({
         image: file,
